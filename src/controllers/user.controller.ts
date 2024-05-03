@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import User from "../models/user-model";
+import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { IUser } from "../types/index.d";
 
 const getUserToken = (_id: string | Types.ObjectId) => {
   const authenticatedUserToken = jwt.sign({ _id }, "express", {
@@ -34,10 +36,10 @@ export const createUser = async (request: Request, response: Response) => {
   }
 };
 
-const loginUser = async (request: Request, response: Response) => {
+export const loginUser = async (request: Request, response: Response) => {
   try {
     const { email, password }: IUser = request.body;
-    const existingUser = User.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (!existingUser) {
       return response.status(409).send({ message: "User doesnt exist" });
     }
@@ -52,10 +54,12 @@ const loginUser = async (request: Request, response: Response) => {
       return response.send({
         token,
         user: {
-          email: (await existingUser).email,
-          name: (await existingUser).name,
+          email: existingUser.email,
+          name: existingUser.name,
         },
       });
+    } else {
+      return response.status(400).send({ message: "Wrong credentials" });
     }
   } catch (error) {
     console.log("error in loginUser", error);
